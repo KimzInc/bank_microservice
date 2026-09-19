@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              # Lets you also hit http://localhost:8080/AUTH-SERVICE/** automatically
+              # once a service is registered, without writing an explicit route below.
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            # Add one of these per real microservice as you build it.
+            # "lb://auth-service" means "look up 'auth-service' in Eureka and load-balance across its instances"
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
+
+            - id: customer-service
+              uri: lb://customer-service
+              predicates:
+                - Path=/api/customers/**
+
+            # - id: account-service
+            #   uri: lb://account-service
+            #   predicates:
+            #     - Path=/api/accounts/**
+
+            # - id: loan-service
+            #   uri: lb://loan-service
+            #   predicates:
+            #     - Path=/api/loans/**
+
+            # - id: employee-service
+            #   uri: lb://employee-service
+            #   predicates:
+            #     - Path=/api/employees/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
