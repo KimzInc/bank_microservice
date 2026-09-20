@@ -1,0 +1,89 @@
+{
+  "info": {
+    "name": "Bank Microservices - customer-service",
+    "description": "Create/read/update your own profile. Run auth-service's Login request first (from the other collection) so auth_token is populated - this collection reuses the same variable name if both are in the same Postman environment/workspace, or you can paste a token manually.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8082/api/customers",
+      "description": "Swap to http://localhost:8080/api/customers to go through api-gateway instead"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "Paste a token from auth-service's Login response, or run that request first in the same environment"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create my profile",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+254700000000\",\n  \"address\": \"123 Example Street, Nairobi\",\n  \"dateOfBirth\": \"1995-06-15\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/me",
+          "host": ["{{base_url}}"],
+          "path": ["me"]
+        },
+        "description": "Creates a profile for whoever the token belongs to. Fails with 409 if that user already has one."
+      }
+    },
+    {
+      "name": "Get my profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/me",
+          "host": ["{{base_url}}"],
+          "path": ["me"]
+        }
+      }
+    },
+    {
+      "name": "Update my profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+254711111111\",\n  \"address\": \"456 New Address, Nairobi\",\n  \"dateOfBirth\": \"1995-06-15\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/me",
+          "host": ["{{base_url}}"],
+          "path": ["me"]
+        }
+      }
+    },
+    {
+      "name": "Get profile by ID (employee-only)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/1",
+          "host": ["{{base_url}}"],
+          "path": ["1"]
+        },
+        "description": "Requires ROLE_TELLER, ROLE_MANAGER, or ROLE_ADMIN. A ROLE_CUSTOMER token gets 403 here - there's no employee-service yet to issue those roles, so this is expected to fail with a plain customer token for now."
+      }
+    }
+  ]
+}

@@ -6,12 +6,13 @@ server:
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
-    username: postgres
-    password: postgres
+    username: kimzinc
+    password: ILoveYouSo@1
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: false
 
 eureka:
   client:

@@ -4,12 +4,13 @@ server:
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/customer_db
-    username: postgres
-    password: postgres
+    username: kimzinc
+    password: ILoveYouSo@1
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: false
 
 eureka:
   client:
@@ -17,3 +18,9 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+# MUST exactly match jwt.secret in auth-service.yml - customer-service doesn't
+# issue tokens, but it validates them independently (Pattern B), which only
+# works if both services sign/verify with the identical shared secret.
+jwt:
+  secret: change-this-to-a-long-random-string-before-you-ever-deploy-anywhere
