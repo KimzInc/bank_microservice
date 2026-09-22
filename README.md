@@ -1,7 +1,8 @@
 # Bank Microservices Starter
 
 Infrastructure layer — **Discovery Server (Eureka) → Config Server → API Gateway**
-— plus two domain services: **auth-service** and **customer-service**.
+— plus three domain services: **auth-service**, **customer-service**, and
+**employee-service**.
 
 Versions used: **Spring Boot 4.1.1**, **Spring Cloud 2025.1.2 (Oakwood)**, **Java 25 (min. 17)**.
 Check for newer patch releases before you start — these move on a ~6 month cadence.
@@ -22,6 +23,7 @@ bank-microservices-starter/
 ├── api-gateway/                <- single entry point for clients, port 8080
 ├── auth-service/                <- registration, login, JWT issuing, port 8081
 ├── customer-service/            <- customer profile data, port 8082
+├── employee-service/            <- HR profiles + role onboarding, port 8085
 └── db-scripts/                  <- one CREATE DATABASE script per database
 ```
 
@@ -39,6 +41,9 @@ bank-microservices-starter/
 5. **customer-service** — `mvn -pl customer-service spring-boot:run`. Requires
    `customer_db` to exist first, and requires a JWT from auth-service to call
    any of its endpoints — see "Running customer-service" below.
+6. **employee-service** — `mvn -pl employee-service spring-boot:run`. Requires
+   `employee_db` to exist first, and calls auth-service directly (via Eureka,
+   not the gateway) to assign roles — see "Running employee-service" below.
 
 (No Maven wrapper is bundled — use your own installed `mvn`, either from inside
 a module folder with `mvn spring-boot:run`, or from the root with `mvn -pl
@@ -122,9 +127,68 @@ curl http://localhost:8082/api/customers/me \
 Or import `customer-service-postman-collection.json` into Postman instead of
 building these by hand — see the Word documentation for the full walkthrough.
 
+## Running employee-service
+
+employee-service is the first service that calls another service directly:
+onboarding an employee makes a real HTTP call to auth-service (resolved via
+Eureka, bypassing the gateway entirely) to assign that person's role, using
+`spring-cloud-starter-loadbalancer` + a `@LoadBalanced RestTemplate`
+(see `client/AuthServiceClient.java`).
+
+**1. Create the database:**
+```bash
+sudo -u postgres psql < db-scripts/create_employee_db.sql
+```
+
+**2. Start it** (after discovery-server, config-server, api-gateway, and
+auth-service are up):
+```bash
+mvn -pl employee-service spring-boot:run
+```
+
+**3. Log in as the seeded admin.** auth-service creates a default admin
+account on first startup if one doesn't already exist (`AdminSeeder`, using
+`app.admin.*` from `config-repo/auth-service.yml` — change that password
+before this is anything but a local learning setup):
+```bash
+curl -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"ChangeMe123!"}'
+```
+
+**4. Onboard an existing user as staff** (they must have already registered
+via auth-service — this promotes an existing account, it doesn't create one):
+```bash
+curl -X POST http://localhost:8085/api/employees \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <paste the ADMIN token here>" \
+  -d '{"username":"jane","employeeCode":"EMP-001","firstName":"Jane","lastName":"Doe","jobTitle":"Teller","department":"Branch Operations","hireDate":"2026-01-15","role":"ROLE_TELLER"}'
+```
+
+**5. Important: get jane a FRESH token before testing her new access.** A JWT
+is a snapshot of someone's roles at the moment it was issued — onboarding
+changes the roles stored in auth-service's database, but doesn't retroactively
+update any token already handed out. Log `jane` in again:
+```bash
+curl -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"jane","password":"password123"}'
+
+# NOW her token includes ROLE_TELLER - use it here
+curl http://localhost:8085/api/employees/me \
+  -H "Authorization: Bearer <paste jane's NEW token here>"
+```
+
+At this point, `jane`'s (new) token will also successfully pass
+customer-service's `GET /api/customers/{id}` employee-only check — the 403
+from that walkthrough should finally turn into a 200.
+
+Or import `employee-service-postman-collection.json` into Postman — it walks
+through this exact sequence with variables for the admin and employee tokens.
+
 ## Wiring the next service into this
 
-When you create `employee-service` (or any future module), it needs:
+When you create `account-service` (or any future module), it needs:
 
 **Dependencies** (in addition to your usual web/JPA/security starters):
 ```xml
@@ -140,25 +204,28 @@ When you create `employee-service` (or any future module), it needs:
 
 **A minimal `application.yml`** — just enough to know its own name and where the
 config server lives; everything else (port, datasource, secrets) gets pulled
-from `config-repo/employee-service.yml`:
+from `config-repo/account-service.yml`:
 ```yaml
 spring:
   application:
-    name: employee-service
+    name: account-service
   config:
     import: optional:configserver:http://localhost:8888
 ```
 
-That's it. Start it after the plumbing apps (and auth-service, since employee
-accounts will need JWTs too) are up, and:
-- It registers itself in Eureka as `EMPLOYEE-SERVICE`.
+That's it. Start it after the plumbing apps (and auth-service, since account
+holders will need JWTs too) are up, and:
+- It registers itself in Eureka as `ACCOUNT-SERVICE`.
 - It pulls port/datasource settings from the config server.
 - Add its route to `api-gateway`'s `application.yml` (uncomment the stubbed
-  `id: employee-service` block, which already has `Path=/api/employees/**`)
-  so `http://localhost:8080/api/employees/...` forwards to it automatically.
+  `id: account-service` block, which already has `Path=/api/accounts/**`)
+  so `http://localhost:8080/api/accounts/...` forwards to it automatically.
 
 Repeat the same recipe (own module, own `config-repo/<name>.yml`, own gateway
-route) for `account-service` and `loan-service`.
+route) for `loan-service`. If it needs to call another service directly
+(the way employee-service calls auth-service), also add
+`spring-cloud-starter-loadbalancer` and a `@LoadBalanced RestTemplate` bean —
+see `employee-service/src/main/java/.../config/RestTemplateConfig.java`.
 
 ## Adding Kafka later
 

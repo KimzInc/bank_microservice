@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "Bank Microservices - account-service",
+    "description": "Open an account, deposit, withdraw, view transaction history. Requires a token from auth-service's Login (a customer, for the self-service flow) or a staff member's token (to act on someone else's account).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8083/api/accounts",
+      "description": "Swap to http://localhost:8080/api/accounts to go through api-gateway instead"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "Paste a token from auth-service's Login response, or share the variable across collections in the same environment"
+    },
+    {
+      "key": "account_id",
+      "value": "",
+      "description": "Auto-filled by Open account's Tests script"
+    }
+  ],
+  "item": [
+    {
+      "name": "Open account",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accountType\": \"SAVINGS\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}",
+          "host": ["{{base_url}}"]
+        },
+        "description": "Opens a new account owned by whoever the token belongs to, starting at a zero balance. accountType must be SAVINGS or CHECKING."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const body = pm.response.json();",
+              "    pm.collectionVariables.set('account_id', body.id);",
+              "    console.log('Saved account_id: ' + body.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get my accounts",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/me",
+          "host": ["{{base_url}}"],
+          "path": ["me"]
+        }
+      }
+    },
+    {
+      "name": "Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 500.00\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/{{account_id}}/deposit",
+          "host": ["{{base_url}}"],
+          "path": ["{{account_id}}", "deposit"]
+        }
+      }
+    },
+    {
+      "name": "Withdraw",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 150.00\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/{{account_id}}/withdraw",
+          "host": ["{{base_url}}"],
+          "path": ["{{account_id}}", "withdraw"]
+        },
+        "description": "Try an amount bigger than the balance to see the 422 Insufficient Funds response."
+      }
+    },
+    {
+      "name": "Get account by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/{{account_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["{{account_id}}"]
+        },
+        "description": "Succeeds for the account's owner OR a staff token (ROLE_TELLER/MANAGER/ADMIN). Any other caller gets 403."
+      }
+    },
+    {
+      "name": "Get transaction history",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/{{account_id}}/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["{{account_id}}", "transactions"]
+        }
+      }
+    }
+  ]
+}

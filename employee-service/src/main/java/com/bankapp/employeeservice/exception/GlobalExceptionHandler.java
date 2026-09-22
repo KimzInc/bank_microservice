@@ -1,4 +1,4 @@
-package com.bankapp.authservice.exception;
+package com.bankapp.employeeservice.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,24 +13,22 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({UsernameAlreadyExistsException.class, EmailAlreadyExistsException.class})
-    public ResponseEntity<Map<String, Object>> handleConflict(RuntimeException ex) {
+    @ExceptionHandler(EmployeeAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(EmployeeAlreadyExistsException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(UserNotFoundException ex) {
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(EmployeeNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidRoleException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidRole(InvalidRoleException ex) {
-        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(InvalidCredentialsException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    @ExceptionHandler(RoleAssignmentException.class)
+    public ResponseEntity<Map<String, Object>> handleRoleAssignment(RoleAssignmentException ex) {
+        // 502: employee-service's own request was fine, but the downstream call
+        // to auth-service is what failed - a Bad Gateway is more accurate than a
+        // generic 500 here, since it points at the actual failing dependency.
+        return build(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

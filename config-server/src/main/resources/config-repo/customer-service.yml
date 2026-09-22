@@ -23,4 +23,4 @@ eureka:
 # issue tokens, but it validates them independently (Pattern B), which only
 # works if both services sign/verify with the identical shared secret.
 jwt:
-  secret: change-this-to-a-long-random-string-before-you-ever-deploy-anywhere
+  secret: 1a0267c655cd203405b30d90a2a121e5ea0290c45e8834837e7da2c1ce077ce9

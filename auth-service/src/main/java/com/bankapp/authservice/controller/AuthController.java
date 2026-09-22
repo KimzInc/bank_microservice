@@ -1,12 +1,15 @@
 package com.bankapp.authservice.controller;
 
+import com.bankapp.authservice.dto.AssignRoleRequest;
 import com.bankapp.authservice.dto.AuthResponse;
 import com.bankapp.authservice.dto.LoginRequest;
 import com.bankapp.authservice.dto.RegisterRequest;
+import com.bankapp.authservice.dto.UserRolesResponse;
 import com.bankapp.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,5 +48,22 @@ public class AuthController {
                 "username", authentication.getName(),
                 "authorities", authentication.getAuthorities()
         ));
+    }
+
+    /**
+     * Called by employee-service (over HTTP, resolved via Eureka - not a shared
+     * database) when an admin onboards someone as a teller/manager/admin.
+     * "internal" in the path is a naming convention, not a technical boundary -
+     * @PreAuthorize below is what actually restricts this to admins, same as any
+     * other endpoint. Real systems often put internal-only routes behind network
+     * policy too; out of scope for this learning project.
+     */
+    @PutMapping("/internal/users/{username}/roles")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<UserRolesResponse> assignRole(
+            @PathVariable("username") String username,
+            @Valid @RequestBody AssignRoleRequest request
+    ) {
+        return ResponseEntity.ok(authService.assignRole(username, request.role()));
     }
 }

@@ -10,12 +10,11 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>auth-service</artifactId>
-    <name>auth-service</name>
-    <description>Registration, login, and JWT issuing for both customers and employees</description>
+    <artifactId>account-service</artifactId>
+    <name>account-service</name>
+    <description>Bank accounts, balances, deposits and withdrawals</description>
 
     <dependencies>
-        <!-- Core web + persistence + security, same as your monolith projects -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -48,7 +47,7 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- JWT creation/parsing -->
+        <!-- Validates JWTs independently (Pattern B) - same as customer-service/employee-service -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -84,6 +83,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>

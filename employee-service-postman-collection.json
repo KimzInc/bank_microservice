@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "Bank Microservices - employee-service",
+    "description": "Onboard staff (admin-only, calls auth-service to assign a role) and view/update employee profiles. Run auth-service's 'Admin Login' request first (from the other collection) to get an admin_token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8085/api/employees",
+      "description": "Swap to http://localhost:8080/api/employees to go through api-gateway instead"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "description": "Paste from auth-service's Admin Login response, or share the environment so it's auto-filled"
+    },
+    {
+      "key": "employee_token",
+      "value": "",
+      "description": "A FRESH token for the newly-onboarded user - see the note on 'Get my profile' below"
+    }
+  ],
+  "item": [
+    {
+      "name": "Onboard employee (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"jane\",\n  \"employeeCode\": \"EMP-001\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"jobTitle\": \"Teller\",\n  \"department\": \"Branch Operations\",\n  \"hireDate\": \"2026-01-15\",\n  \"role\": \"ROLE_TELLER\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}",
+          "host": ["{{base_url}}"]
+        },
+        "description": "'username' must belong to someone who already self-registered via auth-service (e.g. run auth-service's Register request for 'jane' first, if you haven't already). Requires admin_token. role must be ROLE_TELLER, ROLE_MANAGER, or ROLE_ADMIN."
+      }
+    },
+    {
+      "name": "Get my profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{employee_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/me",
+          "host": ["{{base_url}}"],
+          "path": ["me"]
+        },
+        "description": "IMPORTANT: use a FRESH token here, not the one 'jane' had before onboarding. A JWT is only a snapshot of roles at the moment it was issued - onboarding changes roles in auth-service's database, but doesn't retroactively update any token already handed out. Log 'jane' in again via auth-service's Login request AFTER onboarding, then paste that new token into employee_token."
+      }
+    },
+    {
+      "name": "Get profile by ID (manager/admin)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/1",
+          "host": ["{{base_url}}"],
+          "path": ["1"]
+        },
+        "description": "Requires ROLE_MANAGER or ROLE_ADMIN. Adjust the ID to match whatever was returned by Onboard employee."
+      }
+    },
+    {
+      "name": "Update profile (manager/admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jobTitle\": \"Senior Teller\",\n  \"department\": \"Branch Operations\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/1",
+          "host": ["{{base_url}}"],
+          "path": ["1"]
+        },
+        "description": "Job title/department only - role changes go through auth-service, not here."
+      }
+    }
+  ]
+}

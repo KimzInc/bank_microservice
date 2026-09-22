@@ -1,4 +1,4 @@
-package com.bankapp.authservice.exception;
+package com.bankapp.accountservice.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,24 +13,23 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({UsernameAlreadyExistsException.class, EmailAlreadyExistsException.class})
-    public ResponseEntity<Map<String, Object>> handleConflict(RuntimeException ex) {
-        return build(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(UserNotFoundException ex) {
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(AccountNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidRoleException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidRole(InvalidRoleException ex) {
-        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccountAccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(InvalidCredentialsException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientFunds(InsufficientFundsException ex) {
+        // 422: the request was well-formed and the caller was authorized, but the
+        // current state of the account (its balance) makes it impossible to
+        // fulfill - a business-rule failure, not a malformed request (400) or an
+        // auth failure (401/403).
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

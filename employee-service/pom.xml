@@ -10,15 +10,20 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>auth-service</artifactId>
-    <name>auth-service</name>
-    <description>Registration, login, and JWT issuing for both customers and employees</description>
+    <artifactId>employee-service</artifactId>
+    <name>employee-service</name>
+    <description>Employee HR profile data and role onboarding (calls auth-service to assign roles)</description>
 
     <dependencies>
-        <!-- Core web + persistence + security, same as your monolith projects -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
+            <version>4.1.1</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -47,8 +52,19 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
+        <!--
+            Lets RestTemplate resolve a logical service name (e.g. "auth-service")
+            to an actual host:port via Eureka, load-balanced across instances if
+            there's more than one - this is the actual service-to-service call
+            mechanism (see client/AuthServiceClient), distinct from the Gateway,
+            which only routes traffic FROM clients INTO services.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
 
-        <!-- JWT creation/parsing -->
+        <!-- Validates JWTs independently (Pattern B), same as customer-service -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -84,6 +100,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>

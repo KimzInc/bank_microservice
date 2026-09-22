@@ -24,5 +24,15 @@ eureka:
 # Shared secret used to sign/verify JWTs (Pattern A/B from the architecture doc).
 # In real life this comes from a vault, never checked into config like this.
 jwt:
-  secret: change-this-to-a-long-random-string-before-you-ever-deploy-anywhere
+  secret: 1a0267c655cd203405b30d90a2a121e5ea0290c45e8834837e7da2c1ce077ce9
   expiration-ms: 3600000
+
+# Seeds a default admin account on startup if one doesn't already exist - see
+# AdminSeeder. Solves the bootstrapping problem: someone has to be ROLE_ADMIN
+# before employee-service can onboard anyone else into a role. Change the
+# password before this ever runs against anything but your own machine.
+app:
+  admin:
+    username: admin
+    password: Mypassword@1
+    email: admin@bankapp.local
